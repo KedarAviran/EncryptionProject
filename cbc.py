@@ -14,24 +14,31 @@ def unpad(data):
 
 
 def loadkey(data):
-    for block in data.split("\n"):
-        value = block.split(" ")
-        forward[value[0]] = value[1]
-        backwards[value[1]] = value[0]
+    i = 0
+    while (i+2 < len(data)):
+        forward[data[i]] = data[i + 2]
+        backwards[data[i + 2]] = data[i]
+        i += 4
 
 
 def usekey(data):
-    result = data
+    result = []
     for i in range(len(data)):
-        result[i] = forward[data[i]]
-    return result
+        if data[i] in forward:
+            result.append(forward[data[i]])
+        else:
+            result.append(data[i])
+    return bytes(result)
 
 
 def unusekey(data):
-    result = data
+    result = []
     for i in range(len(data)):
-        result[i] = backwards[data[i]]
-    return result
+        if data[i] in backwards:
+            result.append(backwards[data[i]])
+        else:
+            result.append(data[i])
+    return bytes(result)
 
 
 def encrypt_cbc(iv, plaintext):
@@ -51,12 +58,12 @@ def decrypt_cbc(iv, ciphertext):
     plaintext = b''
     previous_block = iv
     for i in range(0, len(ciphertext), BLOCK_SIZE):
-        block = ciphertext[i:i+BLOCK_SIZE]
+        block = ciphertext[i:i + BLOCK_SIZE]
         block = unusekey(block)
         block = bytes(block)
         block = bytes(x ^ y for x, y in zip(block, previous_block))
         plaintext += block
-        previous_block = ciphertext[i:i+BLOCK_SIZE]
+        previous_block = ciphertext[i:i + BLOCK_SIZE]
     return unpad(plaintext)
 
 
@@ -72,6 +79,7 @@ def Encryption(plainTextPath, keyPath, iVPath):
     with open('cipherText.txt', 'wb') as ciphertext_file:
         ciphertext_file.write(ciphertext)
 
+
 def Decryption(cipherTextPath, keyPath, iVPath):
     with open(keyPath, 'rb') as key_file:
         loadkey(key_file.read())
@@ -83,3 +91,6 @@ def Decryption(cipherTextPath, keyPath, iVPath):
     plaintext = decrypt_cbc(ivtext, cipherText)
     with open('cipherText.txt', 'wb') as plaintext_file:
         plaintext_file.write(plaintext)
+
+
+Encryption("msg.txt", "key.txt", "iv.txt")
