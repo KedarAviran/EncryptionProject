@@ -1,24 +1,41 @@
 BLOCK_SIZE = 10
+PADCHAR = 0
 forward = {}
 backwards = {}
 
-
+#def formatWords():
+#    mystring = ''
+#        words = cipherText_file.read()
+#        cipherText_file.close()
+#    for word in words.split('\n'):
+#       mystring = mystring + '" ' + word + ' ",\n'
+#    with open("words.txt", 'r+') as cipherText_file:
+#        cipherText_file.write(mystring)
 def pad(data):
     pad_size = BLOCK_SIZE - len(data) % BLOCK_SIZE
-    return data + bytes([pad_size] * pad_size)
+    if pad_size == 10:
+        pad_size = 0
+    return data + bytes([PADCHAR] * pad_size)
 
 
 def unpad(data):
-    pad_size = data[-1]
-    return data[:-pad_size]
+    i = len(data) -1
+    while i > 0:
+        if data[i] != PADCHAR:
+            return data[:i+1]
+        i -= 1
+    return data
 
 
 def loadkey(data):
     i = 0
-    while (i+2 < len(data)):
-        forward[data[i]] = data[i + 2]
-        backwards[data[i + 2]] = data[i]
-        i += 4
+    while i + 2 < len(data):
+        if data[i] != 13 and data[i] != 10:
+            forward[data[i]] = data[i + 2]
+            backwards[data[i + 2]] = data[i]
+            i += 3
+        else:
+            i += 1
 
 
 def usekey(data):
@@ -48,7 +65,6 @@ def encrypt_cbc(iv, plaintext):
         block = plaintext[i:i + BLOCK_SIZE]
         block = bytes(x ^ y for x, y in zip(block, previous_block))
         block = usekey(block)
-        block = bytes(block)
         ciphertext += block
         previous_block = block
     return ciphertext
@@ -60,7 +76,6 @@ def decrypt_cbc(iv, ciphertext):
     for i in range(0, len(ciphertext), BLOCK_SIZE):
         block = ciphertext[i:i + BLOCK_SIZE]
         block = unusekey(block)
-        block = bytes(block)
         block = bytes(x ^ y for x, y in zip(block, previous_block))
         plaintext += block
         previous_block = ciphertext[i:i + BLOCK_SIZE]
@@ -89,8 +104,9 @@ def Decryption(cipherTextPath, keyPath, iVPath):
         cipherText = cipherText_file.read()
     cipherText = unpad(cipherText)
     plaintext = decrypt_cbc(ivtext, cipherText)
-    with open('cipherText.txt', 'wb') as plaintext_file:
+    with open('msg.txt', 'wb') as plaintext_file:
         plaintext_file.write(plaintext)
 
 
-Encryption("msg.txt", "key.txt", "iv.txt")
+#Encryption("bigmsg.txt", "key.txt", "iv.txt")
+#Decryption("cipherText.txt", "key.txt", "iv.txt")
