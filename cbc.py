@@ -3,20 +3,22 @@ PADCHAR = 0
 forward = {}
 backwards = {}
 
-#def formatWords():
-#    mystring = ''
-#        words = cipherText_file.read()
-#        cipherText_file.close()
-#    for word in words.split('\n'):
-#       mystring = mystring + '" ' + word + ' ",\n'
-#    with open("words.txt", 'r+') as cipherText_file:
-#        cipherText_file.write(mystring)
+"""
+def formatWords():
+    mystring = ''
+    with open("words.txt", 'r+') as cipherText_file:
+        words = cipherText_file.read()
+        cipherText_file.close()
+    for word in words.split('\n'):
+       mystring = mystring + '" ' + word + ' ",\n'
+    with open("words.txt", 'r+') as cipherText_file:
+        cipherText_file.write(mystring)
 def pad(data):
     pad_size = BLOCK_SIZE - len(data) % BLOCK_SIZE
     if pad_size == 10:
         pad_size = 0
     return data + bytes([PADCHAR] * pad_size)
-
+"""
 
 def unpad(data):
     i = len(data) -1
