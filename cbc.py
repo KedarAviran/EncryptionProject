@@ -1,4 +1,4 @@
-BLOCK_SIZE = 10
+BLOCK_SIZE = 8128
 PADCHAR = 0
 forward = {}
 backwards = {}
@@ -13,12 +13,13 @@ def formatWords():
        mystring = mystring + '" ' + word + ' ",\n'
     with open("words.txt", 'r+') as cipherText_file:
         cipherText_file.write(mystring)
+"""
 def pad(data):
     pad_size = BLOCK_SIZE - len(data) % BLOCK_SIZE
-    if pad_size == 10:
+    if pad_size == BLOCK_SIZE:
         pad_size = 0
     return data + bytes([PADCHAR] * pad_size)
-"""
+
 
 def unpad(data):
     i = len(data) -1
@@ -110,5 +111,5 @@ def Decryption(cipherTextPath, keyPath, iVPath):
         plaintext_file.write(plaintext)
 
 
-#Encryption("bigmsg.txt", "key.txt", "iv.txt")
-#Decryption("cipherText.txt", "key.txt", "iv.txt")
+Encryption("bigmsg.txt", "key.txt", "iv.txt")
+Decryption("cipherText.txt", "key.txt", "iv.txt")

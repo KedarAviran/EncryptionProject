@@ -1,6 +1,7 @@
-BLOCK_SIZE = 10
+BLOCK_SIZE = 8128
 PADCHAR = 0
-count = 0
+partialKey = {}
+possibleKeys = {}
 words = {" a ",
          " abandon ",
          " ability ",
@@ -3002,32 +3003,50 @@ words = {" a ",
          " youth ",
          " zone "
          }
-letterSet = [97, 98, 99, 100, 101, 102, 103, 104]
 max = 0
 maxKey = {}
 
 
-def rateText(text):
-    score = 0
-    for word in words:
-        if word in text:
-            score += 1
-    return score
+def pad(data):
+    pad_size = BLOCK_SIZE - len(data) % BLOCK_SIZE
+    if pad_size == BLOCK_SIZE:
+        pad_size = 0
+    return data + bytes([PADCHAR] * pad_size)
 
 
-def nextSet(base, left, iv, cipherText):
-    global count
-    if len(base) == 0:
-        checkSet(left, iv, cipherText)
-        count += 1
-        print(str(count) + "/40320 " + str(int(100 * count / 40320)) + "%")
-        return
-    for b in base:
-        basecopy = base.copy()
-        basecopy.remove(b)
-        leftcopy = left.copy()
-        leftcopy.append(b)
-        nextSet(basecopy, leftcopy, iv, cipherText)
+def usekey(data, key):
+    result = []
+    for i in range(len(data)):
+        if data[i] in key:
+            result.append(key[data[i]])
+        else:
+            result.append(data[i])
+    return bytes(result)
+
+
+def encrypt_cbc(iv, plaintext, tempKey):
+    ciphertext = b''
+    previous_block = iv
+    for i in range(0, len(plaintext), BLOCK_SIZE):
+        block = plaintext[i:i + BLOCK_SIZE]
+        block = bytes(x ^ y for x, y in zip(block, previous_block))
+        block = usekey(block, partialKey)
+        block = usekey(block, tempKey)
+        ciphertext += block
+        previous_block = block
+    return ciphertext
+
+
+def Encryption(text, key, iV):
+    return encrypt_cbc(iV, pad(text), key)
+
+
+def isCharKeyMatch(confirmed, test, index):
+    if index == -1:
+        return False
+    if test[index] == confirmed[index]:
+        return True
+    return False
 
 
 def unusekey(data, key):
@@ -3055,42 +3074,79 @@ def decrypt_cbc(iv, ciphertext, key):
     for i in range(0, len(ciphertext), BLOCK_SIZE):
         block = ciphertext[i:i + BLOCK_SIZE]
         block = unusekey(block, key)
+        block = unusekey(block, partialKey)
         block = bytes(x ^ y for x, y in zip(block, previous_block))
         plaintext += block
         previous_block = ciphertext[i:i + BLOCK_SIZE]
     return unpad(plaintext)
 
 
+def stageOne(plaintext, ivtext, cipherMsg):
+    tempKey = {}
+    possibleKeys = set(range(97, 148))
+    for i in range(97, 148):
+        for j in possibleKeys:
+            tempKey[i] = j
+            index = plaintext.find(j)
+            encrypted = Encryption(plaintext, tempKey, ivtext)
+            if isCharKeyMatch(cipherMsg, encrypted, index):
+                partialKey[i] = j
+                possibleKeys.remove(j)
+                break
+            tempKey.clear()
+
+
 def checkSet(lst, iv, cipherText):
     key = {}
     global max
     global maxKey
-    for i in range(len(letterSet)):
-        key[letterSet[i]] = lst[i]
+    for i in range(len(possibleKeys)):
+        key[possibleKeys[i]] = lst[i]
     rate = rateText(decrypt_cbc(iv, cipherText, key).decode("utf-8"))
     if max < rate:
         max = rate
         maxKey = key
 
 
-def getArrayedKey():
-    strarray = ''
-    for item in letterSet:
-        strarray = strarray + chr(item) + ' ' + chr(maxKey[item]) + '\n'
-    return strarray.encode()
+def rateText(text):
+    score = 0
+    for word in words:
+        if word in text:
+            score += 1
+    return score
 
 
-def Decryption(cipherTextPath, iVPath):
-    global BLOCK_SIZE
-    with open(cipherTextPath, 'rb') as cipherText_file:
-        cipherText = cipherText_file.read()
+def nextSet(base, left, iv, cipherText):
+    global count
+    if len(base) == 0:
+        checkSet(left, iv, cipherText)
+        count += 1
+        # print(str(count) + "/40320 " + str(int(100 * count / 40320)) + "%")
+        return
+    for b in base:
+        basecopy = base.copy()
+        basecopy.remove(b)
+        leftcopy = left.copy()
+        leftcopy.append(b)
+        nextSet(basecopy, leftcopy, iv, cipherText)
+
+
+def stageTwo(ivtext, cipherText):
+    ans = []
+    nextSet(possibleKeys.copy(), ans, ivtext, cipherText)
+
+
+def main(plainTextPath, iVPath, cipherMsgPath, cipherTextPath):
+    with open(plainTextPath, 'rb') as plaintext_file:
+        plaintext = plaintext_file.read()
     with open(iVPath, 'rb') as iv_file:
         ivtext = iv_file.read()
-    BLOCK_SIZE = len(ivtext)
-    ans = []
-    nextSet(letterSet.copy(), ans, ivtext, cipherText)
-    with open('key_cipherText.txt', 'wb') as key_cipherText_file:
-        key_cipherText_file.write(getArrayedKey())
+    with open(cipherMsgPath, 'rb') as cipherMsg_file:
+        cipherMsg = cipherMsg_file.read()
+    with open(cipherTextPath, 'rb') as cipherText_file:
+        cipherText = cipherText_file.read()
+    stageOne(plaintext, ivtext, cipherMsg)
+    stageTwo(ivtext, cipherText)
+    finalkey = partialKey.update(maxKey)
 
-
-Decryption("cipherText.txt", "iv.txt")
+main("bigmsg.txt", "iv.txt", "cipherText.txt", "")
