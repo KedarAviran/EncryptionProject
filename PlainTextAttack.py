@@ -1,4 +1,6 @@
-BLOCK_SIZE = 8128
+import math
+
+BLOCK_SIZE = 10
 PADCHAR = 0
 partialKey = {}
 possibleKeys = {}
@@ -3005,8 +3007,10 @@ words = {" a ",
          }
 max = 0
 maxKey = {}
-
-
+stageOneMax = 0
+forward = {}
+backwards = {}
+count = 0
 def pad(data):
     pad_size = BLOCK_SIZE - len(data) % BLOCK_SIZE
     if pad_size == BLOCK_SIZE:
@@ -3030,7 +3034,6 @@ def encrypt_cbc(iv, plaintext, tempKey):
     for i in range(0, len(plaintext), BLOCK_SIZE):
         block = plaintext[i:i + BLOCK_SIZE]
         block = bytes(x ^ y for x, y in zip(block, previous_block))
-        block = usekey(block, partialKey)
         block = usekey(block, tempKey)
         ciphertext += block
         previous_block = block
@@ -3042,7 +3045,7 @@ def Encryption(text, key, iV):
 
 
 def isCharKeyMatch(confirmed, test, index):
-    if index == -1:
+    if index == -1 or test[index] < 65 or (91 <= test[index] <= 96) or test[index] > 122:
         return False
     if test[index] == confirmed[index]:
         return True
@@ -3074,26 +3077,54 @@ def decrypt_cbc(iv, ciphertext, key):
     for i in range(0, len(ciphertext), BLOCK_SIZE):
         block = ciphertext[i:i + BLOCK_SIZE]
         block = unusekey(block, key)
-        block = unusekey(block, partialKey)
         block = bytes(x ^ y for x, y in zip(block, previous_block))
         plaintext += block
         previous_block = ciphertext[i:i + BLOCK_SIZE]
     return unpad(plaintext)
 
 
+def removeItemsFromSet(removeFrom, items):
+    for i in items:
+        if i in removeFrom:
+            removeFrom.remove(i)
+    return removeFrom
+
+
 def stageOne(plaintext, ivtext, cipherMsg):
+    global stageOneMax
+    global possibleKeys
+    global partialKey
     tempKey = {}
-    possibleKeys = set(range(97, 148))
-    for i in range(97, 148):
+    possibleKeys = set(range(65, 123))
+    possibleKeys = removeItemsFromSet(possibleKeys, set(range(91, 97)))
+    possibleKeys = removeItemsFromSet(possibleKeys, partialKey.keys())
+    for i in possibleKeys.copy():
+        index = plaintext.find(i)
+        if index == -1:
+            continue
+        found = False
+        maxPair = {}
+        key = 0
         for j in possibleKeys:
-            tempKey[i] = j
-            index = plaintext.find(j)
-            encrypted = Encryption(plaintext, tempKey, ivtext)
-            if isCharKeyMatch(cipherMsg, encrypted, index):
-                partialKey[i] = j
-                possibleKeys.remove(j)
-                break
+            tempKey[j] = i
+            unionKey = partialKey.copy()
+            unionKey.update(tempKey)
             tempKey.clear()
+            decrypted = decrypt_cbc(ivtext, unpad(cipherMsg), unionKey)
+            sim = checkChangeKey(decrypted, plaintext)
+            if stageOneMax < sim:
+                stageOneMax = sim
+                maxPair.clear()
+                maxPair[j] = i
+                key = j
+                found = True
+        #if not found:
+            #partialKey[i] = i
+            #possibleKeys.remove(i)
+        #else:
+        if found:
+            partialKey[key] = maxPair[key]
+            possibleKeys.remove(key)
 
 
 def checkSet(lst, iv, cipherText):
@@ -3102,13 +3133,16 @@ def checkSet(lst, iv, cipherText):
     global maxKey
     for i in range(len(possibleKeys)):
         key[possibleKeys[i]] = lst[i]
-    rate = rateText(decrypt_cbc(iv, cipherText, key).decode("utf-8"))
+    unionKey = partialKey.copy()
+    unionKey.update(key)
+    rate = rateText(decrypt_cbc(iv, unpad(cipherText), unionKey).decode("utf-8"))
     if max < rate:
         max = rate
-        maxKey = key
+        maxKey = unionKey
 
 
 def rateText(text):
+    text = text.lower()
     score = 0
     for word in words:
         if word in text:
@@ -3121,7 +3155,7 @@ def nextSet(base, left, iv, cipherText):
     if len(base) == 0:
         checkSet(left, iv, cipherText)
         count += 1
-        # print(str(count) + "/40320 " + str(int(100 * count / 40320)) + "%")
+        print(str(count) + "/" +str(math.factorial(len(base)+len(left))) + " " + str(int(100 * count / math.factorial(len(base)+len(left)))) + "%")
         return
     for b in base:
         basecopy = base.copy()
@@ -3136,7 +3170,28 @@ def stageTwo(ivtext, cipherText):
     nextSet(possibleKeys.copy(), ans, ivtext, cipherText)
 
 
+def checkChangeKey(decryptedWithKey, text):
+    count = 0
+    for i in range(len(text)):
+        if text[i] < 65 or (91 <= text[i] <= 96) or text[i] > 122:
+            continue
+        if decryptedWithKey[i] == text[i]:
+            count += 1
+    return count
+
+def loadkey(data):
+    i = 0
+    while i + 2 < len(data):
+        if data[i] != 13 and data[i] != 10:
+            forward[data[i]] = data[i + 2]
+            backwards[data[i + 2]] = data[i]
+            i += 3
+        else:
+            i += 1
 def main(plainTextPath, iVPath, cipherMsgPath, cipherTextPath):
+    global stageOneMax
+    global BLOCK_SIZE
+    global possibleKeys
     with open(plainTextPath, 'rb') as plaintext_file:
         plaintext = plaintext_file.read()
     with open(iVPath, 'rb') as iv_file:
@@ -3145,8 +3200,23 @@ def main(plainTextPath, iVPath, cipherMsgPath, cipherTextPath):
         cipherMsg = cipherMsg_file.read()
     with open(cipherTextPath, 'rb') as cipherText_file:
         cipherText = cipherText_file.read()
+    BLOCK_SIZE = len(ivtext)
+    withoutKey = decrypt_cbc(ivtext, unpad(cipherMsg), {})
+    stageOneMax = checkChangeKey(withoutKey, plaintext)
     stageOne(plaintext, ivtext, cipherMsg)
+    text = decrypt_cbc(ivtext, unpad(cipherMsg), partialKey)
+    possibleKeys = list(possibleKeys)
+    text = decrypt_cbc(ivtext, unpad(cipherMsg), maxKey)
+    stageTwo(ivtext, cipherMsg)
+    text = decrypt_cbc(ivtext, unpad(cipherMsg), maxKey)
     stageTwo(ivtext, cipherText)
-    finalkey = partialKey.update(maxKey)
+    text = decrypt_cbc(ivtext, unpad(cipherMsg), maxKey)
+    for i in maxKey.keys():
+        if maxKey[i] != backwards[i]:
+            print(str(i) + " " + str(maxKey[i]))
+    print("done")
 
-main("bigmsg.txt", "iv.txt", "cipherText.txt", "")
+with open("key.txt", 'rb') as cipherText_file:
+    text = cipherText_file.read()
+loadkey(text)
+main("firstmsg.txt", "iv.txt", "firstcipher.txt", "seccipher.txt")

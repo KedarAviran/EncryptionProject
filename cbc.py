@@ -1,4 +1,4 @@
-BLOCK_SIZE = 8128
+BLOCK_SIZE = 10
 PADCHAR = 0
 forward = {}
 backwards = {}
@@ -14,6 +14,8 @@ def formatWords():
     with open("words.txt", 'r+') as cipherText_file:
         cipherText_file.write(mystring)
 """
+
+
 def pad(data):
     pad_size = BLOCK_SIZE - len(data) % BLOCK_SIZE
     if pad_size == BLOCK_SIZE:
@@ -22,10 +24,10 @@ def pad(data):
 
 
 def unpad(data):
-    i = len(data) -1
+    i = len(data) - 1
     while i > 0:
         if data[i] != PADCHAR:
-            return data[:i+1]
+            return data[:i + 1]
         i -= 1
     return data
 
@@ -85,7 +87,7 @@ def decrypt_cbc(iv, ciphertext):
     return unpad(plaintext)
 
 
-def Encryption(plainTextPath, keyPath, iVPath):
+def Encryption(plainTextPath, keyPath, iVPath, outputPath):
     with open(keyPath, 'rb') as key_file:
         loadkey(key_file.read())
     with open(iVPath, 'rb') as iv_file:
@@ -94,7 +96,7 @@ def Encryption(plainTextPath, keyPath, iVPath):
         plaintext = plaintext_file.read()
     plaintext = pad(plaintext)
     ciphertext = encrypt_cbc(ivtext, plaintext)
-    with open('cipherText.txt', 'wb') as ciphertext_file:
+    with open(outputPath, 'wb') as ciphertext_file:
         ciphertext_file.write(ciphertext)
 
 
@@ -111,5 +113,7 @@ def Decryption(cipherTextPath, keyPath, iVPath):
         plaintext_file.write(plaintext)
 
 
-Encryption("bigmsg.txt", "key.txt", "iv.txt")
-Decryption("cipherText.txt", "key.txt", "iv.txt")
+Encryption("firstmsg.txt", "key.txt", "iv.txt", "firstcipher.txt")
+Encryption("secmsg.txt", "key.txt", "iv.txt", "seccipher.txt")
+Decryption("firstcipher.txt", "key.txt", "iv.txt")
+
