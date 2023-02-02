@@ -3,6 +3,7 @@ PADCHAR = 0
 forward = {}
 backwards = {}
 
+
 """
 def formatWords():
     mystring = ''
@@ -10,9 +11,10 @@ def formatWords():
         words = cipherText_file.read()
         cipherText_file.close()
     for word in words.split('\n'):
-       mystring = mystring + '" ' + word + ' ",\n'
+       mystring = mystring + '"' + word + '",\n'
     with open("words.txt", 'r+') as cipherText_file:
         cipherText_file.write(mystring)
+
 """
 
 
@@ -113,7 +115,9 @@ def Decryption(cipherTextPath, keyPath, iVPath):
         plaintext_file.write(plaintext)
 
 
-Encryption("firstmsg.txt", "key.txt", "iv.txt", "firstcipher.txt")
-Encryption("secmsg.txt", "key.txt", "iv.txt", "seccipher.txt")
-Decryption("firstcipher.txt", "key.txt", "iv.txt")
+#Encryption("firstmsg.txt", "key.txt", "iv.txt", "firstcipher.txt")
+#Encryption("secmsg.txt", "key.txt", "iv.txt", "seccipher.txt")
+#Decryption("firstcipher.txt", "key.txt", "iv.txt")
 
+name = input()
+print(name)

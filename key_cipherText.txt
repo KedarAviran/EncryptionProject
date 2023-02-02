@@ -1,8 +1,8 @@
-a f
-b b
-c h
-d c
-e g
-f d
-g a
-h e
+a g
+b e
+c a
+d f
+e b
+f c
+g d
+h h
