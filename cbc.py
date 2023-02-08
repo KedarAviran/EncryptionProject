@@ -1,8 +1,9 @@
+import argparse
+
 BLOCK_SIZE = 10
 PADCHAR = 0
 forward = {}
 backwards = {}
-
 
 """
 def formatWords():
@@ -89,7 +90,7 @@ def decrypt_cbc(iv, ciphertext):
     return unpad(plaintext)
 
 
-def Encryption(plainTextPath, keyPath, iVPath, outputPath):
+def Encryption(plainTextPath, keyPath, iVPath):
     with open(keyPath, 'rb') as key_file:
         loadkey(key_file.read())
     with open(iVPath, 'rb') as iv_file:
@@ -98,7 +99,7 @@ def Encryption(plainTextPath, keyPath, iVPath, outputPath):
         plaintext = plaintext_file.read()
     plaintext = pad(plaintext)
     ciphertext = encrypt_cbc(ivtext, plaintext)
-    with open(outputPath, 'wb') as ciphertext_file:
+    with open('plainText_encrypted.txt', 'wb') as ciphertext_file:
         ciphertext_file.write(ciphertext)
 
 
@@ -111,13 +112,18 @@ def Decryption(cipherTextPath, keyPath, iVPath):
         cipherText = cipherText_file.read()
     cipherText = unpad(cipherText)
     plaintext = decrypt_cbc(ivtext, cipherText)
-    with open('msg.txt', 'wb') as plaintext_file:
+    with open('plainText_decrypted.txt', 'wb') as plaintext_file:
         plaintext_file.write(plaintext)
 
 
-#Encryption("firstmsg.txt", "key.txt", "iv.txt", "firstcipher.txt")
-#Encryption("secmsg.txt", "key.txt", "iv.txt", "seccipher.txt")
-#Decryption("firstcipher.txt", "key.txt", "iv.txt")
+# Encryption("plainMsg.txt", "key.txt", "iv.txt")
+# Decryption("cipherMsg.txt", "key.txt", "iv.txt")
 
-name = input()
-print(name)
+
+parser = argparse.ArgumentParser(description='Read Files')
+parser.add_argument("function")
+parser.add_argument("src")
+parser.add_argument("key")
+parser.add_argument("iv")
+args = parser.parse_args()
+globals()[args.function](args.src, args.key, args.iv)

@@ -1,3 +1,5 @@
+import argparse
+
 BLOCK_SIZE = 10
 PADCHAR = 0
 count = 0
@@ -10092,8 +10094,15 @@ def Decryption(cipherTextPath, iVPath):
     BLOCK_SIZE = len(ivtext)
     ans = []
     nextSet(letterSet.copy(), ans, ivtext, cipherText)
-    with open('key_cipherText.txt', 'wb') as key_cipherText_file:
+    with open('cipherText_key.txt', 'wb') as key_cipherText_file:
         key_cipherText_file.write(getArrayedKey())
 
 
-Decryption("cipherText.txt", "iv.txt")
+parser = argparse.ArgumentParser(description='Read Files')
+parser.add_argument("function")
+parser.add_argument("src")
+parser.add_argument("iv")
+args = parser.parse_args()
+if __name__ == '__main__':
+    globals()[args.function](args.src, args.iv)
+# Decryption("cipherText.txt", "iv.txt")

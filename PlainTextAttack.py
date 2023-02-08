@@ -5,7 +5,8 @@ BLOCK_SIZE = 10
 PADCHAR = 0
 partialKey = {}
 possibleKeys = {}
-words = {'a': {"a",
+words = {
+    'a': {"a",
                "aa",
                "aaa",
                "aaron",
